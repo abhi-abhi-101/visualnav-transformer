@@ -6,7 +6,11 @@ import io
 import argparse
 import tqdm
 import yaml
-import rosbag
+# import rosbag
+from rosbags.rosbag1 import Reader
+from rosbags.serde import deserialize_cdr
+from rosbags.typesys import get_types_from_msg, register_types
+
 
 # utils
 from vint_train.process_data.process_data_utils import *
@@ -15,7 +19,10 @@ from vint_train.process_data.process_data_utils import *
 def main(args: argparse.Namespace):
 
     # load the config file
-    with open("vint_train/process_data/process_bags_config.yaml", "r") as f:
+    # with open("vint_train/process_data/process_bags_config.yaml", "r") as f:
+    with open("train/vint_train/process_data/process_bags_config.yaml", "r") as f:
+        
+
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     # create output dir if it doesn't exist
@@ -34,7 +41,9 @@ def main(args: argparse.Namespace):
     # processing loop
     for bag_path in tqdm.tqdm(bag_files, desc="Bags processed"):
         try:
-            b = rosbag.Bag(bag_path)
+            with open(bag_path, "rb") as f:
+                reader = Reader(f)
+                reader.open()
         except rosbag.ROSBagException as e:
             print(e)
             print(f"Error loading {bag_path}. Skipping...")
