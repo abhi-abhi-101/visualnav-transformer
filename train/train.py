@@ -365,12 +365,22 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    with open("config/defaults.yaml", "r") as f:
+    
+    config_path = os.path.join(os.path.dirname(__file__), "config/defaults.yaml")
+    with open(config_path, "r") as f:
+
+        
         default_config = yaml.safe_load(f)
 
     config = default_config
 
-    with open(args.config, "r") as f:
+    config_path = args.config
+    if not os.path.isabs(config_path):
+
+        config_path = os.path.join(os.path.dirname(__file__), config_path)
+
+    with open(config_path, "r") as f:
+
         user_config = yaml.safe_load(f)
 
     config.update(user_config)
@@ -390,7 +400,7 @@ if __name__ == "__main__":
         wandb.init(
             project=config["project_name"],
             settings=wandb.Settings(start_method="fork"),
-            entity="gnmv2", # TODO: change this to your wandb entity
+            entity="ajha95225-indian-institute-of-science", # TODO: change this to your wandb entity
         )
         wandb.save(args.config, policy="now")  # save the config file
         wandb.run.name = config["run_name"]
@@ -400,3 +410,4 @@ if __name__ == "__main__":
 
     print(config)
     main(config)
+
