@@ -13,7 +13,8 @@ from vint_train.visualizing.visualize_utils import to_numpy, from_numpy
 from vint_train.training.logger import Logger
 from vint_train.data.data_utils import VISUALIZATION_IMAGE_SIZE
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
-from diffusers.training_utils import EMAModel
+# from diffusers.training_utils import EMAModel
+from diffusion_policy.model.diffusion.ema_model import EMAModel
 
 import torch
 import torch.nn as nn
@@ -273,6 +274,10 @@ def train(
             learn_angle=learn_angle,
             action_mask=action_mask,
         )
+        print("[DEBUG] dist_pred.requires_grad:", dist_pred.requires_grad)
+        print("[DEBUG] action_pred.requires_grad:", action_pred.requires_grad)
+        print("[DEBUG] losses['total_loss'].requires_grad:", losses["total_loss"].requires_grad)
+
 
         losses["total_loss"].backward()
         optimizer.step()
@@ -657,7 +662,9 @@ def train_nomad(
 
             # Optimize
             optimizer.zero_grad()
-            loss.backward()
+            #loss.backward()
+            
+
             optimizer.step()
 
             # Update Exponential Moving Average of the model weights
@@ -1173,5 +1180,8 @@ def visualize_diffusion_action_distribution(
         plt.close(fig)
     if len(wandb_list) > 0 and use_wandb:
         wandb.log({f"{eval_type}_action_samples": wandb_list}, commit=False)
+
+
+
 
 
