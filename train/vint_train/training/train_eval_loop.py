@@ -15,7 +15,8 @@ from torch.optim import Adam
 from torchvision import transforms
 
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
-from diffusers.training_utils import EMAModel
+# from diffusers.training_utils import EMAModel
+from diffusion_policy.model.diffusion.ema_model import EMAModel
 
 def train_eval_loop(
     train_model: bool,
@@ -193,7 +194,7 @@ def train_eval_loop_nomad(
         eval_freq: frequency of evaluation
     """
     latest_path = os.path.join(project_folder, f"latest.pth")
-    ema_model = EMAModel(model=model,power=0.75)
+    ema_model = EMAModel(model=model, power=0.75)
     
     for epoch in range(current_epoch, current_epoch + epochs):
         if train_model:
@@ -313,3 +314,4 @@ def count_parameters(model):
     # print(table)
     print(f"Total Trainable Params: {total_params/1e6:.2f}M")
     return total_params
+
