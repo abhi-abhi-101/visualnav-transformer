@@ -24,6 +24,9 @@ from torch.optim import Adam
 from torchvision import transforms
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
 
 # LOAD DATA CONFIG
 with open(os.path.join(os.path.dirname(__file__), "../data/data_config.yaml"), "r") as f:
@@ -566,6 +569,17 @@ def train_nomad(
     """
     goal_mask_prob = torch.clip(torch.tensor(goal_mask_prob), 0, 1)
     model.train()
+
+    for param in model.parameters():
+
+
+        param.requires_grad = True
+
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            print(f"Warning: Parameter {name} is frozen!")
+
+
     num_batches = len(dataloader)
 
     uc_action_loss_logger = Logger("uc_action_loss", "train", window_size=print_log_freq)
@@ -616,14 +630,29 @@ def train_nomad(
 
             # Generate random goal mask
             goal_mask = (torch.rand((B,)) < goal_mask_prob).long().to(device)
-            obsgoal_cond = model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=goal_mask)
+            # obsgoal_cond = model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=goal_mask)
+            with torch.set_grad_enabled(True):
+
+                obsgoal_cond = model("vision_encoder", 
+                        obs_img=batch_obs_images,
+                        goal_img=batch_goal_images,
+                        input_goal_mask=goal_mask)
+
+            print(f"[DEBUG] obsgoal_cond requires_grad: {obsgoal_cond.requires_grad}")
+
+
             
             # Get distance label
             distance = distance.float().to(device)
 
+            # deltas = get_delta(actions)
+            # ndeltas = normalize_data(deltas, ACTION_STATS)
+            # naction = from_numpy(ndeltas).to(device)
+            #assert naction.shape[-1] == 2, "action dim must be 2"
+            # Fixed version with gradient tracking:
             deltas = get_delta(actions)
             ndeltas = normalize_data(deltas, ACTION_STATS)
-            naction = from_numpy(ndeltas).to(device)
+            naction = torch.tensor(ndeltas, device=device, dtype=torch.float32, requires_grad=True)
             assert naction.shape[-1] == 2, "action dim must be 2"
 
             # Predict distance
@@ -662,7 +691,7 @@ def train_nomad(
 
             # Optimize
             optimizer.zero_grad()
-            #loss.backward()
+            loss.backward()
             
 
             optimizer.step()
@@ -1180,6 +1209,9 @@ def visualize_diffusion_action_distribution(
         plt.close(fig)
     if len(wandb_list) > 0 and use_wandb:
         wandb.log({f"{eval_type}_action_samples": wandb_list}, commit=False)
+
+
+
 
 
 
